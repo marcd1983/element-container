@@ -1,10 +1,10 @@
 <?php
 
-namespace Antlion\ElementalContainer\Extension;
+namespace Antlion\ElementContainer\Extension;
 
 
 use DNADesign\Elemental\Models\BaseElement;
-use Antlion\ElementalContainer\Model\ElementContainer;
+use Antlion\ElementContainer\Model\ElementContainer;
 use SilverStripe\CMS\Controllers\CMSPageEditController;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Extension; 

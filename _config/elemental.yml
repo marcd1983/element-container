@@ -4,9 +4,9 @@ name: elemental-container
 DNADesign\Elemental\Models\BaseElement:
   extensions:
     - App\Extensions\NestedElementCMSEditLinkExtension
-    # - Antlion\ElementalContainer\Extension\ContainerElementCMSEditLinkExtension
+    # - Antlion\ElementContainer\Extension\ContainerElementCMSEditLinkExtension
 
 
-Antlion\ElementalContainer\Model\ElementalContainer:
+Antlion\ElementContainer\Model\ElementContainer:
   inline_editable: false
 

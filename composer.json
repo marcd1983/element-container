@@ -1,5 +1,5 @@
 {
-    "name": "antlion/elemental-container",
+    "name": "antlion/element-container",
     "description": "elemental container block",
     "type": "silverstripe-vendormodule",
     "keywords": ["silverstripe", "element", "elemental", "content blocks"],
@@ -17,7 +17,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Antlion\\ElementalContainer\\": "src/"
+            "Antlion\\ElementContainer\\": "src/"
         }
     },
     "extra": {

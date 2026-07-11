@@ -1,6 +1,6 @@
 <?php
 
-namespace Antlion\ElementalContainer\Model;
+namespace Antlion\ElementContainer\Model;
 
 
 use DNADesign\Elemental\Extensions\ElementalAreasExtension;
