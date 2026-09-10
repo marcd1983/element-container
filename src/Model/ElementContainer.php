@@ -10,23 +10,12 @@ use SilverStripe\Assets\Image;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\HeaderField;
-use SilverStripe\Forms\OptionsetField;
 use SilverStripe\Forms\NumericField;
 
+use TractorCow\Colorpicker\Forms\ColorField;
 use SilverStripe\AssetAdmin\Forms\UploadField;
 use SilverStripe\Forms\ToggleCompositeField;
-use TractorCow\Colorpicker\Forms\ColorField;
 
-/**
- * @property string $ContainerWidth
- * @property string $PaddingY
- * @property string $PaddingX
- * @property string $MarginY
- * @property string $BackgroundColor
- * @property string $OverlayColor
- * @property float  $OverlayOpacity
- * @property string $Theme
- */
 class ElementContainer extends BaseElement
 {
     private static string $table_name = 'ElementContainer';
@@ -37,7 +26,7 @@ class ElementContainer extends BaseElement
 
     private static array $db = [
         // Width: contained (grid-container), full (full width), fluid (grid-container fluid)
-        'ContainerWidth' => "Enum('contained,full,fluid','contained')",
+        'ContainerWidth' => "Enum('contained,full,fluid','full')",
 
         // Spacing options (keep simple + consistent)
         'PaddingY' => "Enum('none,small,medium,large','medium')",
@@ -46,11 +35,10 @@ class ElementContainer extends BaseElement
 
         // Background options
         'BackgroundColor' => 'Varchar(20)', // hex like #ffffff
+        'BackgroundAttachment' => "Enum('scroll,fixed,local','scroll')",
         'OverlayColor'    => 'Varchar(20)',
-        'OverlayOpacity'  => 'Int', // 0–100
-
-        // Text colour theme
-        'Theme' => "Enum('light,dark','light')",
+        'OverlayOpacity'  => 'Decimal(3,2)', // 0.00 - 1.00
+        'Theme'  => "Enum('light,dark','light')",
     ];
 
     private static array $has_one = [
@@ -98,6 +86,7 @@ class ElementContainer extends BaseElement
             'MarginY',
             'BackgroundImage',
             'BackgroundColor',
+            'BackgroundAttachment',
             'OverlayColor',
             'OverlayOpacity',
             'Theme',
@@ -105,35 +94,45 @@ class ElementContainer extends BaseElement
 
         $appearance = ToggleCompositeField::create(
             'ContainerAppearance',
-            'Appearance',
+            'Container Appearance',
             [
-                DropdownField::create('Theme', 'Theme', [
-                    'light' => 'Light',
-                    'dark'  => 'Dark',
-                ]),
-
                 HeaderField::create('ContainerLayoutHeading', 'Layout', 3),
-                OptionsetField::create('ContainerWidth', 'Container width', [
+
+                DropdownField::create('ContainerWidth', 'Container width', [
                     'contained' => 'Contained (fixed)',
                     'full'      => 'Full width',
                     'fluid'     => 'Fluid container',
                 ]),
+
                 DropdownField::create('PaddingY', 'Padding Y', $this->spacingOptions()),
                 DropdownField::create('PaddingX', 'Padding X', $this->spacingOptions()),
                 DropdownField::create('MarginY',  'Margin Y',  $this->spacingOptions()),
 
                 HeaderField::create('ContainerBackgroundHeading', 'Background', 3),
+
                 UploadField::create('BackgroundImage', 'Background image')
                     ->setFolderName('Uploads/Elements/Container')
                     ->setAllowedFileCategories('image'),
+                DropdownField::create('BackgroundAttachment', 'Background Attachment', [
+                    'scroll' => 'Scroll',
+                    'fixed'      => 'Fixed',
+                    'local'     => 'Local',
+                ]),
                 ColorField::create('BackgroundColor', 'Background color'),
-
-                HeaderField::create('ContainerOverlayHeading', 'Overlay', 3),
                 ColorField::create('OverlayColor', 'Overlay color'),
-                NumericField::create('OverlayOpacity', 'Overlay opacity (0–100)')
-                    ->setDescription('e.g. 35 for 35% opacity'),
+
+                DropdownField::create('Theme', 'Theme', [
+                    'light' => 'Light',
+                    'dark'      => 'Dark',
+                ])->setDescription('Select theme for text color'),
+
+                NumericField::create('OverlayOpacity', 'Overlay opacity (0–1)')
+                    ->setScale(2)
+                    ->setDescription('Example: 0.35'),
             ]
-        )->setStartClosed(true);
+        )
+        // optional: collapsed by default
+        ->setStartClosed(true);
 
         // Put it on the main tab (adjust placement as you like)
         $fields->addFieldToTab('Root.Main', $appearance);
@@ -165,20 +164,34 @@ class ElementContainer extends BaseElement
         return false;
     }
 
-    public function TextColor(): string
-    {
-        return $this->Theme === 'dark' ? '#fff' : '#111';
-    }
-
     // --- Helpers for templates ---
 
     public function ContainerWidthClass(): string
     {
         return match ($this->ContainerWidth) {
-            'contained' => 'contained',
+            'contained' => '',
             'fluid'     => 'fluid',
             'full'      => 'full',
-            default     => 'contained',
+            default     => 'full',
+        };
+    }
+
+     public function ThemeClass(): string
+    {
+        return match ($this->Theme) {
+            'light' => 'light-container-theme',
+            'dark'     => 'dark-container-theme',
+            default     => 'light',
+        };
+    }
+
+    public function BgAttachmentClass(): string
+    {
+        return match ($this->BackgroundAttachment) {
+            'scroll' => 'scroll',
+            'fixed'     => 'fixed',
+            'local'      => 'local',
+            default     => 'scroll',
         };
     }
 
@@ -203,71 +216,67 @@ class ElementContainer extends BaseElement
         return trim("{$my}");
     }
 
-    public function OverlayOpacityCss(): string
-    {
-        $pct = max(0, min(100, (int) $this->OverlayOpacity));
-        return (string) round($pct / 100, 2);
-    }
-
     public function HasOverlay(): bool
     {
-        return (bool)$this->OverlayColor && (int)$this->OverlayOpacity > 0;
+        return (bool)$this->OverlayColor && (float)$this->OverlayOpacity > 0;
     }
-
     public function OverlayRGBA(): ?string
-    {
-        $hex = (string)$this->OverlayColor;
-        $opacity = (int)$this->OverlayOpacity;
+{
+    $hex = (string)$this->OverlayColor;
+    $opacity = (float)$this->OverlayOpacity;
 
-        if (!$hex || $opacity <= 0) {
-            return null;
-        }
-
-        $rgb = $this->hexToRgb($hex);
-        if (!$rgb) {
-            return null;
-        }
-
-        return sprintf('rgba(%d,%d,%d,%.2f)', $rgb[0], $rgb[1], $rgb[2], round($opacity / 100, 2));
+    if (!$hex || $opacity <= 0) {
+        return null;
     }
 
-    public function BackgroundRGBA(): ?string
-    {
-        // optional: if you ever want bg color with opacity too
-        $hex = (string)$this->BackgroundColor;
-        if (!$hex) {
-            return null;
-        }
-
-        $rgb = $this->hexToRgb($hex);
-        if (!$rgb) {
-            return null;
-        }
-
-        return sprintf('rgb(%d,%d,%d)', $rgb[0], $rgb[1], $rgb[2]);
+    $rgb = $this->hexToRgb($hex);
+    if (!$rgb) {
+        return null;
     }
 
-    /**
-     * Accepts "#fff", "fff", "#ffffff", "ffffff"
-     * Returns [r,g,b] or null
-     */
-    private function hexToRgb(string $hex): ?array
-    {
-        $hex = ltrim(trim($hex), '#');
+    // clamp 0..1
+    $opacity = max(0, min(1, $opacity));
 
-        if (strlen($hex) === 3) {
-            $hex = "{$hex[0]}{$hex[0]}{$hex[1]}{$hex[1]}{$hex[2]}{$hex[2]}";
-        }
+    return sprintf('rgba(%d,%d,%d,%.2f)', $rgb[0], $rgb[1], $rgb[2], $opacity);
+}
 
-        if (!preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
-            return null;
-        }
-
-        return [
-            hexdec(substr($hex, 0, 2)),
-            hexdec(substr($hex, 2, 2)),
-            hexdec(substr($hex, 4, 2)),
-        ];
+public function BackgroundRGBA(): ?string
+{
+    // optional: if you ever want bg color with opacity too
+    $hex = (string)$this->BackgroundColor;
+    if (!$hex) {
+        return null;
     }
+
+    $rgb = $this->hexToRgb($hex);
+    if (!$rgb) {
+        return null;
+    }
+
+    return sprintf('rgb(%d,%d,%d)', $rgb[0], $rgb[1], $rgb[2]);
+}
+
+/**
+ * Accepts "#fff", "fff", "#ffffff", "ffffff"
+ * Returns [r,g,b] or null
+ */
+private function hexToRgb(string $hex): ?array
+{
+    $hex = ltrim(trim($hex), '#');
+
+    if (strlen($hex) === 3) {
+        $hex = "{$hex[0]}{$hex[0]}{$hex[1]}{$hex[1]}{$hex[2]}{$hex[2]}";
+    }
+
+    if (!preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+        return null;
+    }
+
+    return [
+        hexdec(substr($hex, 0, 2)),
+        hexdec(substr($hex, 2, 2)),
+        hexdec(substr($hex, 4, 2)),
+    ];
+}
 
 }
