@@ -1,0 +1,18 @@
+en:
+  Antlion\ElementContainer\Model\ElementContainer:
+    PLURALNAME: Containers
+    PLURALS:
+      one: 'A Container'
+      other: '{count} Containers'
+    SINGULARNAME: Container
+    db_BackgroundAttachment: 'Background attachment'
+    db_BackgroundColor: 'Background color'
+    db_ContainerWidth: 'Container width'
+    db_MarginY: 'Margin Y'
+    db_OverlayColor: 'Overlay color'
+    db_OverlayOpacity: 'Overlay opacity'
+    db_PaddingX: 'Padding X'
+    db_PaddingY: 'Padding Y'
+    db_Theme: Theme
+    has_one_BackgroundImage: 'Background image'
+    has_one_InnerElements: 'Inner elements'
